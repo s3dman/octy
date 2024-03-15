@@ -2,7 +2,6 @@ async function Page({ params }) {
 	return (
 		<>
 			<h1>USER CAMPAIGN OVERVIEW</h1>
-			<h3>ORG: {params.orgname}</h3>
 			<h3>CAMPAIGN: {params.id}</h3>
 		</>
 	);
