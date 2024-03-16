@@ -30,8 +30,7 @@ export async function updateCampaign(request) {
 
         await connectMongo();
         const updatedCampaign = await Campaigns.findByIdAndUpdate(
-            id,
-            { wallet },
+            [campaignid]{eac element in fract gets updated by current fract},
             { new: true }
         );
         if (!updatedCampaign) {
