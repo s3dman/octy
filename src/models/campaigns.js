@@ -7,6 +7,7 @@ const campaignSchema = new Schema(
 		amt_raised: Number,
 		desc: String,
 		wallet: String,
+		fract: Array,
 	},
 	{
 		timestamps: true,

@@ -2,60 +2,98 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Modal from "react-modal";
-
 import { donate } from "@/lib/block";
+import Header from "@/components/Header";
 
 function CampaignPage({ params }) {
 	const [campaignData, setCampaignData] = useState(null);
 	const [senderKey, setSenderKey] = useState("");
-	const [fract, setFract] = useState([]);
+	const [fract, setFract] = useState([20, 30, 50]);
 	const [value, setValue] = useState("");
 	const [modalIsOpen, setModalIsOpen] = useState(false);
+	const [transactions, setTransactions] = useState([]);
 
 	useEffect(() => {
-		fetchDataFromMongoDB();
+		fetchData();
 	}, []);
 
-	const fetchDataFromMongoDB = async () => {
-		try {
-			const response = await axios.get(
-				"/api/Campaigns/?id=" + params.campaignid,
+	useEffect(() => {
+		// Save transactions to localStorage for each campaign
+		if (campaignData) {
+			localStorage.setItem(
+				`transactions_${params.campaignid}`,
+				JSON.stringify(transactions),
 			);
-			setCampaignData(response.data.campaigns);
-			setFract(Array(response.data.campaigns.services.length).fill(0));
-		} catch (error) {
-			console.error("Error fetching campaign data:", error);
+			localStorage.setItem(
+				`amount_raised_${params.campaignid}`,
+				campaignData.amt_raised.toString(),
+			);
+		}
+	}, [transactions, params.campaignid, campaignData]);
+
+	useEffect(() => {
+		// Fetch transactions from localStorage when the component mounts
+		const storedTransactions = localStorage.getItem(
+			`transactions_${params.campaignid}`,
+		);
+		if (storedTransactions) {
+			setTransactions(JSON.parse(storedTransactions));
+		}
+		const storedAmountRaised = localStorage.getItem(
+			`amount_raised_${params.campaignid}`,
+		);
+		if (storedAmountRaised) {
+			setCampaignData((prevData) => ({
+				...prevData,
+				amt_raised: parseFloat(storedAmountRaised),
+			}));
+		}
+	}, [params.campaignid]);
+
+	const fetchData = async () => {
+		let storedCampaignData = localStorage.getItem("campaignData");
+		if (storedCampaignData) {
+			// If campaign data exists in localStorage, use it
+			setCampaignData(JSON.parse(storedCampaignData));
+		} else {
+			// Otherwise, fetch campaign data from MongoDB
+			try {
+				const response = await axios.get(
+					"/api/Campaigns/?id=" + params.campaignid,
+				);
+				const campaign = response.data.campaigns;
+				setCampaignData(campaign);
+			} catch (error) {
+				console.error("Error fetching campaign data:", error);
+			}
 		}
 	};
 
 	const handleDonation = async () => {
 		try {
-			const response = await axios.get(
-				"/api/Campaigns/?id=" + params.campaignid,
+			// Call the donate function
+			const txHash = await donate(
+				campaignData.wallet,
+				senderKey,
+				fract,
+				value,
 			);
-			setCampaignData(response.data.campaigns);
-			setFract(Array(response.data.campaigns.services.length).fill(0));
+			// Update transactions state
+			setTransactions([
+				...transactions,
+				{ from: senderKey, to: campaignData.wallet, txHash },
+			]);
+			// Increment amount raised
+			const donatedValue = parseFloat(value);
+			const updatedAmountRaised = campaignData.amt_raised + donatedValue;
+			setCampaignData({
+				...campaignData,
+				amt_raised: updatedAmountRaised,
+			});
+			// Perform any other action after donation
+			closeModal();
 		} catch (error) {
-			console.error("Error fetching campaign data:", error);
-		}
-
-		try {
-			// fetch current fract distribution of campaign and each user
-			// recalculate fract
-
-			// do donation
-			// const res = await donate(
-			//     campaignData.wallet,
-			//     senderKey,
-			//     fract,
-			//     value
-			// );
-			console.log(campaignData.wallet);
-			console.log(senderKey);
-			console.log(fract);
-			console.log(value);
-		} catch (error) {
-			console.error("Error distributing donations:", error);
+			console.error("Error donating:", error);
 		}
 	};
 
@@ -67,100 +105,110 @@ function CampaignPage({ params }) {
 		setModalIsOpen(true);
 	};
 
-	const toggleDonation = (index) => {
-		setFract((prevFract) => {
-			const newFract = [...prevFract];
-			newFract[index] = newFract[index] === 1 ? 0 : 1; // Toggle value
-			return newFract;
-		});
-	};
-
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-			<div className="container mx-auto">
-				<h1 className="text-3xl font-semibold mb-4">Campaign Data</h1>
-				{campaignData && (
-					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<p className="text-lg font-semibold mb-2">
-								Campaign Name:
-							</p>
-							<p>{campaignData.campaign_name}</p>
-						</div>
-						<div>
-							<p className="text-lg font-semibold mb-2">
-								Amount Raised:
-							</p>
-							<p>{campaignData.amt_raised}</p>
-						</div>
-						<div>
-							<p className="text-lg font-semibold mb-2">
-								Description:
-							</p>
-							<p>{campaignData.desc}</p>
-						</div>
-						<div>
-							<p className="text-lg font-semibold mb-2">
-								Wallet:
-							</p>
-							<p>{campaignData.wallet}</p>
-						</div>
-						<div className="col-span-2 flex justify-center">
+		<>
+			<Header />
+			<div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+				<div className="container mx-auto flex flex-col items-center justify-center">
+					<h1 className="text-3xl font-semibold mb-4">
+						Campaign Data
+					</h1>
+					<div className="max-w-4xl w-full bg-gray-800 rounded-lg p-8">
+						{campaignData && (
+							<div>
+								<p className="text-lg font-semibold mb-2">
+									Campaign Name:
+								</p>
+								<p className="break-words">
+									{campaignData.campaign_name}
+								</p>
+								<p className="text-lg font-semibold mb-2">
+									Amount Raised:
+								</p>
+								<p>{campaignData.amt_raised}</p>
+								<p className="text-lg font-semibold mb-2">
+									Description:
+								</p>
+								<p className="break-words">
+									{campaignData.desc}
+								</p>
+								<p className="text-lg font-semibold mb-2">
+									Wallet:
+								</p>
+								<p>{campaignData.wallet}</p>
+							</div>
+						)}
+						<div className="mt-4">
 							<button
 								onClick={openModal}
 								className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
 							>
 								Make Donation
 							</button>
+							<h2 className="text-lg font-semibold mt-4 mb-2">
+								Transactions:
+							</h2>
+							<ul className="text-sm">
+								{transactions.map((tx, index) => (
+									<li key={index}>
+										<p>
+											<strong>From:</strong> {tx.from}
+										</p>
+										<p>
+											<strong>To:</strong> {tx.to}
+										</p>
+										<p>
+											<strong>Tx Hash:</strong>{" "}
+											{tx.txHash.hash}
+										</p>
+										<br />
+									</li>
+								))}
+							</ul>
 						</div>
 					</div>
-				)}
-			</div>
-			<Modal
-				isOpen={modalIsOpen}
-				onRequestClose={closeModal}
-				ariaHideApp={false}
-				contentLabel="Make Donation"
-				className="modal fixed w-96 bg-gray-800 rounded-lg p-8 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-				overlayClassName="overlay fixed bg-black bg-opacity-75 inset-0"
-			>
-				<div className="modal-content">
-					<input
-						type="password"
-						placeholder="Enter sender's private key"
-						value={senderKey}
-						onChange={(e) => setSenderKey(e.target.value)}
-						className="mb-4 w-full px-4 py-2 border rounded-lg bg-gray-700 text-white"
-					/>
-					{fract.map((donate, index) => (
-						<div key={index} className="mb-2 flex items-center">
-							<input
-								type="checkbox"
-								checked={donate === 1}
-								onChange={() => toggleDonation(index)}
-								className="mr-2"
-							/>
-							<label className="text-white">
-								Recipient {index + 1}
-							</label>
-						</div>
-					))}
-					<input
-						type="text"
-						placeholder="Enter donation amount"
-						value={value}
-						onChange={(e) => setValue(e.target.value)}
-						className="mb-4 w-full px-4 py-2 border rounded-lg bg-gray-700 text-white"
-					/>
-					<button
-						onClick={handleDonation}
-						className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
-					>
-						Submit Donation
-					</button>
 				</div>
-			</Modal>
-		</div>
+				<Modal
+					isOpen={modalIsOpen}
+					onRequestClose={closeModal}
+					ariaHideApp={false}
+					contentLabel="Make Donation"
+					className="modal fixed w-96 bg-gray-800 rounded-lg p-8 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+					overlayClassName="overlay fixed bg-black bg-opacity-75 inset-0"
+				>
+					<div className="modal-content">
+						<input
+							type="password"
+							placeholder="Enter sender's private key"
+							value={senderKey}
+							onChange={(e) => setSenderKey(e.target.value)}
+							className="mb-4 w-full px-4 py-2 border rounded-lg bg-gray-700 text-white"
+						/>
+						{fract.map((donate, index) => (
+							<div key={index} className="mb-2 flex items-center">
+								<input type="checkbox" className="mr-2" />
+								<label className="text-white">
+									Recipient {index + 1}
+								</label>
+							</div>
+						))}
+						<input
+							type="text"
+							placeholder="Enter donation amount"
+							value={value}
+							onChange={(e) => setValue(e.target.value)}
+							className="mb-4 w-full px-4 py-2 border rounded-lg bg-gray-700 text-white"
+						/>
+						<button
+							onClick={handleDonation}
+							className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
+						>
+							Submit Donation
+						</button>
+					</div>
+				</Modal>
+			</div>
+		</>
 	);
 }
 
