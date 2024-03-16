@@ -1,4 +1,5 @@
 import React from "react";
+
 import Header from "@/components/Header"
 import Section from "@/components/Section"
 import FloatingNav from "@/components/ui/floating-navbar"
@@ -14,5 +15,4 @@ async function Page() {
 		</div>
 	)
 }
-
 export default Page;
