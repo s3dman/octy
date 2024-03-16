@@ -1,5 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
 import { deploy } from "@/lib/block";
 
 function CreateCampaignPage() {
@@ -11,13 +13,20 @@ function CreateCampaignPage() {
 	const [description, setDescription] = useState("");
 	const [submitted, setSubmitted] = useState(false);
 
+	useEffect(() => {
+		if (campaignAddress !== "") {
+			saveCampaign();
+		}
+	}, [campaignAddress]);
+
 	const saveCampaign = async () => {
 		try {
 			const response = await axios.post("/api/Campaigns/", {
-				campaignName,
-				recipientAddresses,
-				description,
-				campaignAddress,
+				campaign_name: campaignName,
+				services: recipientAddresses,
+				amt_raised: 0,
+				desc: description,
+				wallet: campaignAddress,
 			});
 			if (response.status === 200) {
 				console.log("Campaign data saved successfully");
@@ -26,13 +35,12 @@ function CreateCampaignPage() {
 			console.error("Error saving campaign data:", error);
 		}
 	};
+
 	const handleSubmit = async (event) => {
 		event.preventDefault();
 		try {
 			const res = await deploy(orgPrivateKey, recipientAddresses);
-			setCampaignAddress(res[0].target);
-			await saveCampaign(); // post request with state variables in body
-
+			setCampaignAddress(res.target);
 			setSubmitted(true);
 		} catch (error) {
 			console.error("Error deploying campaign:", error);

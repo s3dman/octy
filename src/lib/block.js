@@ -10,8 +10,7 @@ export async function deploy(signer, address) {
 		const wallet = new ethers.Wallet(signer, provider);
 		const factory = new ethers.ContractFactory(abi, bytecode, wallet);
 		const contract = await factory.deploy(address);
-		const deploymentTransaction = contract.deploymentTransaction();
-		return [contract, deploymentTransaction];
+		return contract;
 	} catch (error) {
 		console.error(error);
 	}

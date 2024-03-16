@@ -1,20 +1,18 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const campaignSchema = new Schema(
-    {
-        campaign_name:String,
-        services:Array,
-        amt_raised:Number,
-        desc:String,
-        wallet:String
-    },
-    {
-        timestamps:true
-    }
+	{
+		campaign_name: String,
+		services: Array,
+		amt_raised: Number,
+		desc: String,
+		wallet: String,
+	},
+	{
+		timestamps: true,
+	},
 );
 
-
-const Campaigns = mongoose.models.campaigns || mongoose.model("Campaign", campaignSchema)
+const Campaigns = mongoose.model("Campaign", campaignSchema);
 
 export default Campaigns;
-
