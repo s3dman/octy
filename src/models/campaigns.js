@@ -2,7 +2,7 @@ import mongoose, {Schema} from "mongoose";
 
 const campaignSchema = new Schema(
     {
-        campaign_id:String,
+        campaign_name:String,
         services:Array,
         amt_raised:Number,
         desc:String,
