@@ -67,6 +67,9 @@
 		"react-dom": "^18",
 
 
+		"react-modal": "^3.16.1",
+
+
 		"tailwind-merge": "^2.2.1",
 
 
