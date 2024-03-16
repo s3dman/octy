@@ -3,10 +3,10 @@ import Orgs from "@/models/orgs";
 import { NextResponse } from "next/server"
 
 export async function POST(request){
-    const { orgs_id, campaigns }= await request.json()
+    const {org_name, org_wallet, campaigns, desc }= await request.json()
 
     await connectMongo();
-    await Orgs.create({orgs_id, campaigns});
-    return NextResponse.json({message:"Org created"}, {status : 201})
+    const org = await Orgs.create({org_name, org_wallet, campaigns, desc});
+    return NextResponse.json({message:"Org created", org_id:org._id}, {status : 201})
 
 } 

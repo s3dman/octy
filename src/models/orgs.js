@@ -2,10 +2,10 @@ import mongoose, {Schema} from "mongoose";
 
 const orgSchema = new Schema(
     {
-        orgs_id:String,
-        campaigns:[{
-            type:Schema.Types.ObjectId, ref: 'Campaign' //Foreign key to campaign table 
-        }]
+        org_name:String,
+        org_wallet:String,
+        campaigns:Array,
+        desc:String
     },
     {
         timestamps:true

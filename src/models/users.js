@@ -2,10 +2,7 @@ import mongoose, {Schema} from "mongoose";
 
 const userSchema = new Schema(
     {
-        user_id:String,
-        past_campaigns:[{
-            type:Schema.Types.ObjectId, ref: 'Campaign'
-        }],
+        past_campaigns:String,
         past_services:Array,
     },
     {
